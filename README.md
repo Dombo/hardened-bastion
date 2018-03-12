@@ -25,6 +25,8 @@ You can see a sample `users.yml` file in the example. This file controls access 
 
 The `bastion.tf` file contains a series of configuration directives which enable different parts of the system configuration, I've attempted to document them [in the example module](example/bastion.tf).
 
+![demo](https://github.com/Dombo/hardened-bastion/raw/master/demo-bastion.gif)
+
 #### Usage
 
 ```hcl
