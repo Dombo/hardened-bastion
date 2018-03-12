@@ -1,0 +1,14 @@
+{% for user in users %}
+### for {{ user }}
+SOURCE                     ANY
+OPEN_PORTS                 tcp/22
+REQUIRE_USERNAME           {{ user }}
+REQUIRE_SOURCE_ADDRESS     Y
+FW_ACCESS_TIMEOUT          60
+KEY_BASE64                 {{ users[user].fwknop_key }}
+HMAC_KEY_BASE64            {{ users[user].fwknop_hmac_key }}
+CMD_CYCLE_OPEN             iptables -A INPUT -p tcp --dport 22 -j ACCEPT
+CMD_CYCLE_CLOSE            iptables -D INPUT -p tcp --dport 22 -j ACCEPT
+{% endfor %}
+
+

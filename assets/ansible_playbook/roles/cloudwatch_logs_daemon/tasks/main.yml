@@ -1,0 +1,43 @@
+---
+- uri: # Fetch the MD5 of the setup file to verify download with
+    url: https://s3.amazonaws.com/aws-cloudwatch/downloads/latest/awslogs-agent-setup.py
+    method: GET
+    return_content: yes
+  register: response
+
+- name: Download AWS Logs setup file
+  get_url:
+    url: https://s3.amazonaws.com/aws-cloudwatch/downloads/latest/awslogs-agent-setup.py
+    dest: "/{{ ansible_user }}/awslogs-agent-setup.py"
+    checksum: md5:{{ response.etag }}
+    mode: 0755
+
+## Agent configuration file
+- template:
+    src: cloudwatchlog.conf.j2
+    dest: "/{{ ansible_user }}/cloudwatchlog.conf"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: 0644
+
+- name: Install the AWS Logs agent
+  command: "python3 /{{ ansible_user }}/awslogs-agent-setup.py --region {{ region }} --configfile /{{ ansible_user }}/cloudwatchlog.conf --non-interactive"
+  environment:
+    DEBIAN_FRONTEND: noninteractive
+
+- template:
+    src: awslogs.service.j2
+    dest: /etc/systemd/system/awslogs.service
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: 0644
+
+- service:
+    name: awslogs
+    state: restarted
+    enabled: yes
+
+
+#timestamp is more than 14 days in past.
+#<13>Feb 17 04:37:28
+#  %b %d %H:%M:%S

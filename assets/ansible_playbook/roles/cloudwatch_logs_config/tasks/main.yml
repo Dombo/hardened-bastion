@@ -1,0 +1,21 @@
+---
+- template:
+    src: sessionlogs.conf.j2
+    dest: "/var/awslogs/etc/config/sessionlogs.conf"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: 0644
+  when: enable_log_centralise_ssh_session_history | default("false") | match("true")
+
+- template:
+    src: bootstraplogs.conf.j2
+    dest: "/var/awslogs/etc/config/bootstraplogs.conf"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: 0644
+  when: enable_log_centralise_bootstrap_results | default("false") | match("true")
+
+- service:
+    name: awslogs
+    state: restarted
+    enabled: yes

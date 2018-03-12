@@ -1,0 +1,5 @@
+---
+bastion_mnt: '/var/log/bastion'
+bastion_log: 'bastion.log'
+bastion_logfile: "{{ bastion_mnt }}/{{ bastion_log }}"
+bastion_logfile_shadow: "{{ bastion_mnt }}/.{{ bastion_log }}"

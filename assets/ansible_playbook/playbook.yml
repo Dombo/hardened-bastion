@@ -1,0 +1,11 @@
+---
+
+- hosts: all
+  roles:
+    - harden_ssh
+    - { role: cloudwatch_logs_daemon, when: enable_cloudwatch_logging == "true" }
+    - { role: cloudwatch_logs_config, when: enable_cloudwatch_logging == "true" }
+    - harden_system
+    - ssh_users
+    - { role: ssh_tfa, when: enable_ssh_tfa == "true" }
+    - { role: ssh_port_knocking, when: enable_ssh_port_knocking == "true" }

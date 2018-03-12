@@ -1,0 +1,32 @@
+---
+- name: Create the users as configured in users.yml
+  user:
+    name: "{{ item.key }}"
+    comment: "{{ item.value.name }}"
+    shell: "/bin/bash"
+  with_dict: "{{ users }}"
+
+- file:
+    path: "/home/{{ item.key }}/.ssh"
+    state: directory
+    mode: 0700
+    owner: "{{ item.key }}"
+    group: "{{ item.group | default(item.key)  }}"
+  with_dict: "{{ users }}"
+
+- authorized_key:
+    user: "{{ item.key }}"
+    key: "{{ item.value.pubkey }}"
+    path: "/home/{{ item.key }}/.ssh/authorized_keys"
+    manage_dir: no
+    state: present
+  when: item.value.pubkey
+  with_dict: "{{ users }}"
+
+- copy:
+    dest: "/etc/sudoers.d/{{ item.key }}"
+    content: |
+             {{ item.key }}  ALL=(ALL) NOPASSWD:ALL
+             # End ansible managed section
+  when: item.value.sudoer
+  with_dict: "{{ users }}"

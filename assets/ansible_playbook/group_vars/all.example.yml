@@ -1,0 +1,21 @@
+---
+global_ssh_user: "ubuntu"
+
+disable_bash_history: "false"
+
+enable_cloudwatch_session_logging: "true"
+cloudwatch_log_group_name: "prod-hardened-bastion-log-group"
+region: "ap-southeast-2"
+
+# On session end the server is terminated - making persistence of compromise hard
+enable_ephemeral_ssh_sessions: "false"
+
+enable_ssh_port_knocking: "false"
+enable_ssh_tfa: "true"
+
+users:
+  dom:
+    name: Dom Mod
+    pubkey: 'ssh-rsa AAAA...hEhf dom@hostname'
+    tfasecret: 'RZ...4G'
+    sudoer: true

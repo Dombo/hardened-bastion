@@ -1,0 +1,11 @@
+#!/bin/sh
+
+IPTABLES=/sbin/iptables
+INT_INTF=eth0
+
+# Accept established SSH connections
+$IPTABLES -A INPUT -i $INT_INTF -p tcp --dport 22 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+# Accept SSH connections from SELF
+$IPTABLES -A INPUT -i $INT_INTF -p tcp -s localhost --dport 22 -j ACCEPT
+# Drop by default SSH
+$IPTABLES -A INPUT -i $INT_INTF -p tcp --dport 22 -j DROP

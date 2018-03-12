@@ -1,0 +1,22 @@
+---
+global_ssh_user: "${global_ssh_user}"
+disable_root_user_ssh: "${disable_root_user_ssh}"
+disable_bash_history: "${disable_bash_history}"
+
+enable_cloudwatch_logging: "true"
+cloudwatch_log_group_name: "${cloudwatch_log_group_name}"
+region: "${region}"
+enable_log_centralise_ssh_session_history: "true"
+enable_log_centralise_bootstrap_results: "true"
+
+# On session end the server is terminated - making persistence of compromise hard
+enable_ephemeral_ssh_sessions: "${enable_ephemeral_ssh_sessions}"
+
+enable_ssh_port_knocking: "${enable_ssh_port_knocking}"
+ssh_port_knocking_port_range_lower_bound: "${ssh_port_knocking_port_range_lower_bound}"
+ssh_port_knocking_port_range_upper_bound: "${ssh_port_knocking_port_range_upper_bound}"
+ssh_port_knocking_firewall_config_network_cidr: "${ssh_port_knocking_firewall_config_network_cidr}"
+
+enable_ssh_tfa: "${enable_ssh_tfa}"
+
+${ssh_users}

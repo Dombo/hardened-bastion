@@ -1,0 +1,63 @@
+---
+# Unattended upgrades, auto updates & auto-remove kernels
+- package:
+    name: unattended-upgrades
+    state: latest
+
+- package:
+    name: update-notifier-common
+    state: latest
+
+- name: Configure unattended upgrades
+  command: dpkg-reconfigure unattended-upgrades
+  environment:
+    DEBIAN_FRONTEND: noninteractive
+
+- lineinfile: # Enables automatic reboot of the host to apply updates
+    path: "/etc/apt/apt.conf.d/50unattended-upgrades"
+    regexp: '^Unattended-Upgrade::Automatic-Reboot'
+    line: 'Unattended-Upgrade::Automatic-Reboot "true";'
+    state: present
+
+- lineinfile: # Enables automatic removal of old kernels
+    path: "/etc/apt/apt.conf.d/50unattended-upgrades"
+    regexp: '^Unattended-Upgrade::Remove-Unused-Dependencies'
+    line: 'Unattended-Upgrade::Remove-Unused-Dependencies "true";'
+    state: present
+
+# Prevent process snooping?
+
+#mount -o remount,rw,hidepid=2 /proc
+#awk '!/proc/' /etc/fstab > temp && mv temp /etc/fstab
+#echo "proc /proc proc defaults,hidepid=2 0 0" >> /etc/fstab
+
+# Prevent reading the bootstrap logs (likely sensitive information contained within)
+- file:
+    path: "/var/log/cloud-init-output.log"
+    mode: 0640
+
+#/etc/bash.bash_logout
+#      The systemwide login shell cleanup file, executed when a login shell exits
+
+# Ephemeral system - terminate system on shell session end
+- lineinfile:
+    path: "/etc/bash.bashrc"
+    regexp: '^INSTANCE_ID='
+    line: "INSTANCE_ID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)"
+    state: present
+  when: enable_ephemeral_ssh_sessions | default("false") | match("true")
+
+- file:
+    path: "/etc/bash.bash_logout"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    state: touch
+    mode: 0644
+  when: enable_ephemeral_ssh_sessions | default("false") | match("true")
+
+- blockinfile:
+    dest: "/etc/bash.bash_logout"
+    block: "{{ lookup('template', 'ephemeral_ssh_session.sh.j2') }}"
+    marker: "# {mark} ANSIBLE MANAGED BLOCK"
+    state: present
+  when: enable_ephemeral_ssh_sessions | default("false") | match("true")

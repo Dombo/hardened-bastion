@@ -1,0 +1,71 @@
+---
+- package:
+    name: fwknop-server
+    state: latest
+
+- package:
+    name: ntp
+    state: latest
+
+# The user attempting to connect needs the fwknop client on their machine
+# sudo apt-get install fwknop-client
+# fwknop -A tcp/22 -D 52...144 --key-gen --use-hmac --save-rc-stanza
+# fwknop -A tcp/{{ ssh_port }} -D {{ external_server_ip }} --key-gen --use-hmac --save-rc-stanza
+# grep KEY /home/dom/.fwknoprc
+# The relevant keys need to be input under the users.yml file
+
+# Once configured and deployed the users can trigger SPA like so:
+# fwknop -R -n 52...144 -P udp -p $(awk 'BEGIN{srand();print int(rand()*(62209-62201))+62201 }') --verbose
+# fwknop -R -n 52...144 -P udp -p $(awk 'BEGIN{srand();print int(rand()*({{ ssh_port_knocking_port_range_upper_bound }}-{{ ssh_port_knocking_port_range_lower_bound }}))+{{ ssh_port_knocking_port_range_lower_bound }} }') --verbose
+
+# The awk script is just a way to generate a random number within a range
+# Alternatively you could make the port range 10000-65535 and just use the --rand-port flag
+# awk 'BEGIN{srand();print int(rand()*({{ ssh_port_knocking_port_range_upper_bound }}-{{ ssh_port_knocking_port_range_lower_bound }}))+{{ ssh_port_knocking_port_range_lower_bound }} }'
+
+- service:
+    name: fwknop-server
+    state: stopped
+    enabled: yes
+
+- template:
+    src: access.conf.j2
+    dest: /etc/fwknop/access.conf
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: 0600
+  with_dict: "{{ users }}"
+
+- lineinfile: # Daemonize the fwknop server, poorly implemented init script/no systemd support
+    path: "/etc/default/fwknop-server"
+    regexp: '^START_DAEMON='
+    line: 'START_DAEMON="yes"'
+    state: present
+
+- lineinfile:
+    path: "/etc/fwknop/fwknopd.conf"
+    regexp: '^#VERBOSE'
+    line: 'VERBOSE                     1;'
+    state: present
+
+- lineinfile:
+    path: "/etc/fwknop/fwknopd.conf"
+    regexp: '^#PCAP_FILTER'
+    line: 'PCAP_FILTER                 udp dst portrange {{ ssh_port_knocking_port_range_lower_bound }}-{{ ssh_port_knocking_port_range_upper_bound }};'
+    state: present
+
+- template:
+    src: iptables_config.sh.j2
+    dest: /usr/bin/bastion/iptables_config.sh
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: 0750
+
+- service:
+    name: fwknop-server
+    state: started
+    enabled: yes
+
+# From my quick tests this can't be broken up
+# Otherwise the default drop prevents Ansible from connecting via SSH & restarting the fwknopd
+# This is essential because on boot the fwknopd does some further amendments to the iptable rules
+- command: /usr/bin/bastion/iptables_config.sh && systemctl restart fwknop-server.service

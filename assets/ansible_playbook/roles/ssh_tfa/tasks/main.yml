@@ -1,0 +1,59 @@
+---
+- package:
+    name: libpam-google-authenticator
+    state: latest
+
+- name: Add the users TFA Secret to their personal config file
+  copy:
+    dest: "/home/{{ item.key }}/.google_authenticator"
+    content: |
+             {{ item.value.tfasecret }}
+             "RATE_LIMIT 3 30
+             " WINDOW_SIZE 17
+             " DISALLOW_REUSE
+             " TOTP_AUTH
+  when: item.value.tfasecret
+  with_dict: "{{ users }}"
+
+- file:
+    path: "/home/{{ item.key }}/.google_authenticator"
+    owner: "{{ item.key }}"
+    group: "{{ item.key }}"
+    mode: 0600
+  when: item.value.tfasecret
+  with_dict: "{{ users }}"
+
+# Users should do this on their client machines and provide the resulting Secret to the administrator to be input inside users.yml
+# google-authenticator --force --disallow-reuse --time-base --rate-limit=3 --rate-time=30 --window-size 17 --secret=$(mktemp) --label="Hardened Bastion"
+# Storing the TFA on the client defeats the purpose of TFA - so we write it to an epehemeral location
+# They can scan the barcode output by google-authenticator into their phone for a mobile copy of the TFA as well
+
+- name: Requires a TOTP token every time a user SSH's in - providing they have a .google_authenticator file
+  lineinfile:
+    path: "/etc/pam.d/sshd"
+    regexp: '^auth required pam_google_authenticator.so nullok'
+    line: 'auth required pam_google_authenticator.so nullok'
+    state: present
+
+- lineinfile:
+    path: "/etc/pam.d/sshd"
+    regexp: '^@include common-auth'
+    state: absent
+
+- name: Configures the SSHd to validate a TFA via PAM
+  lineinfile:
+    path: "/etc/ssh/sshd_config"
+    regexp: '^ChallengeResponseAuthentication'
+    line: 'ChallengeResponseAuthentication yes'
+    state: present
+
+- lineinfile:
+    path: "/etc/ssh/sshd_config"
+    regexp: '^AuthenticationMethods publickey,keyboard-interactive'
+    line: 'AuthenticationMethods publickey,keyboard-interactive'
+    state: present
+
+- name: Restart SSHd enacting the TFA changes
+  service:
+    name: sshd
+    state: restarted

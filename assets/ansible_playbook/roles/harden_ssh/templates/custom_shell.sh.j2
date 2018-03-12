@@ -1,0 +1,21 @@
+# Enforces that the SSH client did not supply a command.
+export Allow_SSH="ssh"
+
+function log_ssh_session_open () {
+    # Record the initial time, user & command the system was authenticated against using
+    LOG_ORIGINAL_COMMAND=`echo "${SSH_ORIGINAL_COMMAND:-no command provided by user}:$SSH_CONNECTION"`
+    logger -s $LOG_ORIGINAL_COMMAND 2>> "{{ bastion_mnt }}/{{ bastion_log }}"
+}
+
+if [[ -z $SSH_ORIGINAL_COMMAND ]] || [[ $SSH_ORIGINAL_COMMAND =~ ^$Allow_SSH ]]; then #Allow ssh to instance and log connection
+
+    log_ssh_session_open
+    # Write everything done in this session to /tmp/messages
+    script -qf /tmp/messages --command="/bin/bash -l" # We run as a login shell so we can utilise .bash_logout
+else # The "script" program could be circumvented with some commands (e.g. bash, nc).
+    # Therefore, we intentionally prevent users from supplying commands.
+
+    log_ssh_session_open
+    echo "This bastion supports interactive sessions only. Do not supply a command"
+    exit 1
+fi

@@ -1,0 +1,108 @@
+---
+# Prevents run-at-authentication-time commands being used to circumvent on host security
+- name: Configure SSH to execute a custom script (shell) on login
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    line: 'ForceCommand /usr/bin/bastion/shell'
+    state: present
+
+- file:
+    path: "{{ bastion_mnt }}"
+    state: directory
+    mode: 0755
+
+- file:
+    path: /usr/bin/bastion
+    state: directory
+    mode: 0755
+
+- file:
+    path: /tmp/messages
+    state: touch
+    owner: root
+    group: "{{ global_ssh_user }}"
+    mode: 0662
+
+- name: Create the log file for SSH authentication attempts
+  file:
+    path: "{{ bastion_logfile }}"
+    owner: root
+    group: "{{ global_ssh_user }}"
+    state: touch
+    mode: 0662
+    attributes: 'a'
+
+- file:
+    src: "{{ bastion_logfile }}"
+    dest: "{{ bastion_logfile_shadow }}"
+    owner: root
+    group: "{{ global_ssh_user }}"
+    mode: 0662
+    state: link
+
+- name: Create (template) the custom shell execution environment
+  template:
+    src: custom_shell.sh.j2
+    dest: /usr/bin/bastion/shell
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: 0755
+
+- name: Prevent default root user from SSH access
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^DenyUsers'
+    line: 'DenyUsers {{ global_ssh_user }}'
+    state: present
+  when: disable_root_user_ssh | default("false") | match("true")
+
+- name: Restart SSHd enacting the hardening changes
+  service:
+    name: sshd
+    state: restarted
+
+- template:
+    src: ssh_session_logrotate.j2
+    dest: /etc/logrotate.d/ssh_session_logrotate
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: 0644
+
+#/etc/bash.bashrc
+#      The systemwide initialization file, executed for login shells
+
+# Prevents snooping the previous sessions commands, a low hanging enumeration technique
+- name: Prevent active session from storing history
+  lineinfile:
+    path: "/etc/bash.bashrc"
+    regexp: '^HISTSIZE='
+    line: 'HISTSIZE=0'
+    state: present
+  when: disable_bash_history | default("false") | match("true")
+
+- name: Prevent history file from having information in it at session start and end
+  lineinfile:
+    path: "/etc/bash.bashrc"
+    regexp: '^HISTFILESIZE='
+    line: 'HISTFILESIZE=0'
+    state: present
+  when: disable_bash_history | default("false") | match("true")
+
+# Logs user, their origin, location on system & what they were doing when executing commands
+- lineinfile:
+    path: "/etc/bash.bashrc"
+    regexp: '^IP='
+    line: "IP=$(ip route get 8.8.8.8 | awk '{print $NF; exit}')"
+    state: present
+
+- lineinfile:
+    path: "/etc/bash.bashrc"
+    regexp: '^BASTION_LOG='
+    line: 'BASTION_LOG={{ bastion_logfile }}'
+    state: present
+
+- lineinfile:
+    path: "/etc/bash.bashrc"
+    regexp: '^PROMPT_COMMAND='
+    line: "PROMPT_COMMAND='history -a >(logger -t \"[ON]:${IP}   [USER]:${USER}   [PWD]:${PWD}\" -s 2>>${BASTION_LOG})'"
+    state: present

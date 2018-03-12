@@ -1,0 +1,8 @@
+---
+
+#/etc/ssh/sshd-banner
+# You have N to login
+
+#/etc/ssh/sshd_config
+#Banner /etc/issue.net
+#Banner /etc/ssh/sshd-banner
