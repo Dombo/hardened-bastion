@@ -285,8 +285,9 @@ resource "aws_iam_role_policy" "role_policy_ephemeral_sessions" {
 }
 
 resource "aws_s3_bucket" "bucket" {
-  bucket = "${var.environment}-hardened-bastion-storage"
+  bucket_prefix = "${var.environment}-hardened-bastion-storage"
   acl    = "private"
+  force_destroy = "true"
 
   tags {
     Name        = "${var.environment}-hardened-bastion-storage"
@@ -330,7 +331,7 @@ data "archive_file" "playbook_payload" {
 }
 
 resource "aws_s3_bucket_object" "playbook" {
-  bucket = "${var.environment}-hardened-bastion-storage"
+  bucket = "${aws_s3_bucket.bucket.id}"
 
   # We name the object with it's dependent objects md5
   # This is a workaround for a shortcoming in terraforms design (IMO)
