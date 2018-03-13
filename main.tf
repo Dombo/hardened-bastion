@@ -189,7 +189,7 @@ resource "aws_iam_role" "role" {
   name_prefix = "${var.environment}-hardened-bastion-role"
   path        = "/bastion/"
 
-  assume_role_policy = <<EOF
+  assume_role_policy = <<POLICY
 {
   "Version": "2012-10-17",
   "Statement": [
@@ -202,14 +202,14 @@ resource "aws_iam_role" "role" {
     }
   ]
 }
-EOF
+POLICY
 }
 
 resource "aws_iam_role_policy" "role_policy" {
   name_prefix = "${var.environment}-hardened-bastion-policy"
   role        = "${aws_iam_role.role.id}"
 
-  policy = <<EOF
+  policy = <<POLICY
 {
   "Version": "2012-10-17",
   "Statement": [
@@ -251,7 +251,7 @@ resource "aws_iam_role_policy" "role_policy" {
     }
   ]
 }
-EOF
+POLICY
 }
 
 data "aws_iam_policy_document" "ephemeral_sessions" {

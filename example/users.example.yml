@@ -1,4 +1,4 @@
-users:
+users: # NOTE: This file is effectively a secrets file, it should not be version controlled
   dom: # The users username on the OS
     name: Dom Mod # The users label on the OS
     # The users public key for SSH auth

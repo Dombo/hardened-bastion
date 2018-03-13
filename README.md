@@ -1,6 +1,8 @@
 ## AWS Terraform'd Hardened Bastion with easy access management
 
 I often see security practices referred to as hard or an afterthought, here's my attempt to make managing them reasonably straight forward inside a moderately sized team.
+The idea being the more paranoid you are, the more features you can enable to present a more challenging attack vector.
+Obviously this is only one piece of the puzzle.
 
 #### Features
 
@@ -10,7 +12,7 @@ A terraform module and example implementation to deploy a hardened bastion host,
 * [default] Static public IP exposed, persistent across host lifecycle (convenient for putting behind a DNS A record)
 * [default] System hardened using Ansible playbook (session drops to a permission limited shell)
 * [default] Users permissions & security requirements managed via a single YAML file
-* [default] Operations performed on bastion are centralized enabling audit of the bastion
+* [default] Operations performed on bastion are centralized enabling audit of the bastion (including the system cloud-init-logs for troubleshooting purposes)
 * [optional] Access to the bastion requires a TFA token upon authentication
 * [optional] Bastion kills itself on SSH session end, a compromised host is only compromised for the duration of the schedule
 * [optional] Single Packet Authorisation over UDP exposes the SSH port, otherwise the bastion is not network accessible nor can it be port scanned
