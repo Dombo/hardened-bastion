@@ -89,10 +89,6 @@ data "template_file" "bootstrap_system_configuration" {
     environment     = "${var.environment}"
     payload_name    = "${aws_s3_bucket_object.playbook.key}"
   }
-
-  depends_on = [
-    "aws_s3_bucket_object.playbook",
-  ]
 }
 
 data "template_cloudinit_config" "bootstrap_config" {
@@ -338,6 +334,10 @@ resource "aws_s3_bucket_object" "playbook" {
 
   source = "${path.module}/assets/ansible_playbook.zip"
   etag   = "${data.archive_file.playbook_payload.output_md5}"
+
+  depends_on = [
+    "aws_s3_bucket.bucket",
+  ]
 }
 
 resource "aws_s3_bucket_policy" "bucket_policy" {
