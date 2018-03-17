@@ -338,6 +338,10 @@ resource "aws_s3_bucket_object" "playbook" {
 
   source = "${path.module}/assets/ansible_playbook.zip"
   etag   = "${data.archive_file.playbook_payload.output_md5}"
+
+  depends_on = [
+    "aws_s3_bucket.bucket",
+  ]
 }
 
 resource "aws_s3_bucket_policy" "bucket_policy" {
