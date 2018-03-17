@@ -185,7 +185,7 @@ resource "aws_iam_role" "role" {
   name_prefix = "${var.environment}-hardened-bastion-role"
   path        = "/bastion/"
 
-  assume_role_policy = <<EOF
+  assume_role_policy = <<POLICY
 {
   "Version": "2012-10-17",
   "Statement": [
@@ -198,14 +198,14 @@ resource "aws_iam_role" "role" {
     }
   ]
 }
-EOF
+POLICY
 }
 
 resource "aws_iam_role_policy" "role_policy" {
   name_prefix = "${var.environment}-hardened-bastion-policy"
   role        = "${aws_iam_role.role.id}"
 
-  policy = <<EOF
+  policy = <<POLICY
 {
   "Version": "2012-10-17",
   "Statement": [
@@ -247,7 +247,7 @@ resource "aws_iam_role_policy" "role_policy" {
     }
   ]
 }
-EOF
+POLICY
 }
 
 data "aws_iam_policy_document" "ephemeral_sessions" {
@@ -281,8 +281,9 @@ resource "aws_iam_role_policy" "role_policy_ephemeral_sessions" {
 }
 
 resource "aws_s3_bucket" "bucket" {
-  bucket = "${var.environment}-hardened-bastion-storage"
+  bucket_prefix = "${var.environment}-hardened-bastion-storage"
   acl    = "private"
+  force_destroy = "true"
 
   tags {
     Name        = "${var.environment}-hardened-bastion-storage"
@@ -326,7 +327,7 @@ data "archive_file" "playbook_payload" {
 }
 
 resource "aws_s3_bucket_object" "playbook" {
-  bucket = "${var.environment}-hardened-bastion-storage"
+  bucket = "${aws_s3_bucket.bucket.id}"
 
   # We name the object with it's dependent objects md5
   # This is a workaround for a shortcoming in terraforms design (IMO)
